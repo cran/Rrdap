@@ -1,4 +1,4 @@
-Rrdap 1.0.1
+Rrdap 1.0.2
 ===========
 
 R package that queries RDAP servers.
@@ -54,9 +54,8 @@ rdap_query("1.1.1.1")
 # Grab RDAP data for a domain from a specific RDAP provider
 rdap_query("bcable.net", rdap_uri="https://rdap.verisign.com/net/v1/")
 
-# Grab multiple vectorized results
-hosts_ips <- c(
-  "1.0.0.1", "1.1.1.1", "4.2.2.4", "8.8.8.8", "bcable.net", "duckduckgo.com"
+# Grab multiple mixed vectorized results
+hosts_ips <- c("1.0.0.1", "bcable.net")
 )
 rdap_data <- rdap_query(hosts_ips)
 rdap_data

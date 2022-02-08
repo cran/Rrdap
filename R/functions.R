@@ -89,18 +89,26 @@ rdap_keynames <- function(query_ret){
 rdap_extract_df <- function(query_ret, sub_name){
 	if(length(query_ret)>1){
 		lapply(query_ret, FUN=function(df){
-			data_ret <- unlist(df[[sub_name]])
+			if(sub_name %in% names(df)){
+				data_ret <- unlist(df[[sub_name]])
+				data.frame(
+					key=names(data_ret),
+					val=as.vector(data_ret)
+				)
+			} else {
+				NA
+			}
+		})
+	} else {
+		if(sub_name %in% names(query_ret)){
+			data_ret <- unlist(query_ret[[sub_name]])
 			data.frame(
 				key=names(data_ret),
 				val=as.vector(data_ret)
 			)
-		})
-	} else {
-		data_ret <- unlist(query_ret[[sub_name]])
-		data.frame(
-			key=names(data_ret),
-			val=as.vector(data_ret)
-		)
+		} else {
+			NA
+		}
 	}
 }
 
