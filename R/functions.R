@@ -8,6 +8,8 @@ entity_detect <- function(entity){
 }
 
 rdap_query_one <- function(entity, rdap_uri, query_entity=FALSE, debug=FALSE){
+	error_envir <- new.env(parent=baseenv())
+
 	if(query_entity == FALSE){
 		query_entity <- entity_detect(entity)
 	}
@@ -19,31 +21,48 @@ rdap_query_one <- function(entity, rdap_uri, query_entity=FALSE, debug=FALSE){
 
 	curl_con <- curl::curl(rdap_query_uri)
 	lines <- FALSE
-	tryCatch(
-		lines <- readLines(curl_con, warn=FALSE),
-		error=function(e){
-			print(paste0(
-				c("Error (RDAP Query URI: ", rdap_query_uri, ")"),
-				collapse=""
-			))
-			print(e)
+	assign("error", FALSE, envir=error_envir)
+	for(i in 1:5){
+		if(i!=1){
+			if(!mget("error", envir=error_envir)[["error"]]){
+				break;
+			} else {
+				Sys.sleep(0.5);
+			}
 		}
-	)
+
+		tryCatch(
+			lines <- readLines(curl_con, warn=FALSE),
+			error=function(e){
+				print(paste0(
+					c("Error (RDAP Query URI: ", rdap_query_uri, ")"),
+					collapse=""
+				))
+				print(e)
+				assign("error", TRUE, envir=error_envir)
+			}
+		)
+	}
 
 	tryCatch(close(curl_con))
-	if(length(lines) == 1 && lines == FALSE){
+
+	if(mget("error", envir=error_envir)[["error"]]){
 		NA
-
 	} else {
-		if(debug >= 2){
-			print("DEBUG:")
-			print(paste0(lines, collapse="\n"))
-			print("END DEBUG//")
-		}
+		if(length(lines) == 1 && lines == FALSE){
+			NA
 
-		clean_lines <- enc2utf8(trimws(paste0(lines, collapse=""), "both"))
-		json_obj <- rjson::fromJSON(clean_lines)
-		json_obj
+		} else {
+			if(debug >= 2){
+				print("DEBUG:")
+				print(paste0(lines, collapse="\n"))
+				print("END DEBUG//")
+			}
+
+			clean_lines <- enc2utf8(trimws(paste0(lines, collapse=""), "both"))
+			json_obj <- rjson::fromJSON(clean_lines)
+			json_obj
+		}
 	}
 }
 
@@ -113,21 +132,49 @@ rdap_extract_df <- function(query_ret, sub_name){
 }
 
 # shared code with Rwhois and Rrdap
-.keyval_extract <- function(query_ret, keys, unlist.recursive=TRUE){
-	data_ret <- lapply(query_ret, FUN=function(df){
-		df$val[tolower(df$key) %in% tolower(keys)]
-	})
-	data_ret[sapply(data_ret, FUN=length) == 0] <- NA
+.vect_blacklist <- function(vect, blacklist_values=NULL){
+	if(is.null(blacklist_values)){
+		vect[[1]]
 
-	if(sum(sapply(data_ret, FUN=length) > 1) != 0){
-		data_ret[sapply(data_ret, FUN=length) > 1] <-
-			sapply(data_ret[
-				sapply(data_ret, FUN=length) > 1],
-				FUN=function(df){ df[[1]] }
+	} else {
+		mat <- sapply(blacklist_values, FUN=function(bval){
+			sapply(vect,
+				FUN=function(val){
+					tolower(substr(val, 1, nchar(bval))) == tolower(bval)
+				}
 			)
+		})
+		sumsMat <- rowSums(mat)
+		names(sumsMat)[sumsMat==0][[1]]
 	}
+}
 
-	unlist(data_ret, recursive=unlist.recursive)
+# shared code with Rwhois and Rrdap
+.keyval_extract <- function(
+	query_ret, keys, blacklist_values=NULL, unlist.recursive=TRUE
+){
+	if(is.data.frame(query_ret)){
+		data_ret <- query_ret$val[tolower(query_ret$key) %in% tolower(keys)]
+		.vect_blacklist(data_ret, blacklist_values)
+
+	} else {
+		data_ret <- lapply(query_ret, FUN=function(df){
+			df$val[tolower(df$key) %in% tolower(keys)]
+		})
+		data_ret[sapply(data_ret, FUN=length) == 0] <- NA
+
+		if(sum(sapply(data_ret, FUN=length) > 1) != 0){
+			data_ret[sapply(data_ret, FUN=length) > 1] <-
+				sapply(data_ret[
+					sapply(data_ret, FUN=length) > 1],
+					FUN=function(vect){
+						.vect_blacklist(vect, blacklist_values)
+					}
+				)
+		}
+
+		unlist(data_ret, recursive=unlist.recursive)
+	}
 }
 
 #rdap_keyval_extract <- function(query_ret, keys, unlist.recursive=FALSE){ .keyval_extract(...) }

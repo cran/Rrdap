@@ -22,7 +22,7 @@ rdap_keynames(query_ret)
 
 rdap_extract_df(query_ret, sub_name)
 
-rdap_keyval_extract(query_ret, keys, unlist.recursive=TRUE)
+rdap_keyval_extract(query_ret, keys, blacklist_values=NULL, unlist.recursive=TRUE)
 }
 \arguments{
 \item{entities}{Entity (or entities as vector) to query RDAP for.  Can IP addresses, domains, or a mix of the two.}
@@ -33,6 +33,7 @@ rdap_keyval_extract(query_ret, keys, unlist.recursive=TRUE)
 \item{key}{Single string, case-sensitive, of what key to look to return back values from the RDAP return}
 \item{keys}{Single string or vector of strings, case-insensitive, of what keys to look for in-order to return back values of from the RDAP return}
 \item{debug}{Boolean if you want debug prints (good for large quantities of manual data)}
+\item{blacklist_values}{Character or vector of values (or starting values) to skip when searching}
 \item{unlist.recursive}{Boolean if you want the unlist at the end to pass recursively}
 }
 \value{
