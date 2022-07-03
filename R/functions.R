@@ -154,12 +154,28 @@ rdap_extract_df <- function(query_ret, sub_name){
 	query_ret, keys, blacklist_values=NULL, unlist.recursive=TRUE
 ){
 	if(is.data.frame(query_ret)){
-		data_ret <- query_ret$val[tolower(query_ret$key) %in% tolower(keys)]
-		.vect_blacklist(data_ret, blacklist_values)
+		if(
+			!is.null(query_ret[["key"]]) &&
+			!is.null(query_ret[["val"]])
+		){
+			data_ret <- query_ret$val[tolower(query_ret$key) %in% tolower(keys)]
+			.vect_blacklist(data_ret, blacklist_values)
+
+		} else {
+			NA
+		}
 
 	} else {
 		data_ret <- lapply(query_ret, FUN=function(df){
-			df$val[tolower(df$key) %in% tolower(keys)]
+			if(
+				!is.null(df[["key"]]) &&
+				!is.null(df[["val"]])
+			){
+				df$val[tolower(df$key) %in% tolower(keys)]
+
+			} else {
+				NA
+			}
 		})
 		data_ret[sapply(data_ret, FUN=length) == 0] <- NA
 
@@ -177,5 +193,4 @@ rdap_extract_df <- function(query_ret, sub_name){
 	}
 }
 
-#rdap_keyval_extract <- function(query_ret, keys, unlist.recursive=FALSE){ .keyval_extract(...) }
 rdap_keyval_extract <- .keyval_extract

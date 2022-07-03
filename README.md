@@ -1,4 +1,4 @@
-Rrdap 1.0.3
+Rrdap 1.0.5
 ===========
 
 R package that queries RDAP servers.
