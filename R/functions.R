@@ -82,7 +82,11 @@ rdap_query <- function(entities,
 rdap_keyextract <- function(query_ret, key){
 	if(length(query_ret)>1){
 		unlist(lapply(query_ret, FUN=function(df){
-			if(!is.data.frame(df) || is.null(df[[key]])){
+			if(
+				!is.data.frame(df) ||
+				!(key %in% names(df)) ||
+				is.null(key[[df]])
+			){
 				NA
 			} else if(length(df[[key]]) > 1) {
 				df[[key]][[1]]
@@ -90,7 +94,11 @@ rdap_keyextract <- function(query_ret, key){
 				df[[key]]
 			}
 		}))
-	} else if (!is.data.frame(query_ret) || is.null(query_ret[[key]])){
+	} else if (
+		!is.data.frame(query_ret) ||
+		!(key %in% names(query_ret)) ||
+		is.null(query_ret[[key]])
+	){
 		NA
 	} else {
 		query_ret[[key]]
@@ -154,10 +162,7 @@ rdap_extract_df <- function(query_ret, sub_name){
 	query_ret, keys, blacklist_values=NULL, unlist.recursive=TRUE
 ){
 	if(is.data.frame(query_ret)){
-		if(
-			!is.null(query_ret[["key"]]) &&
-			!is.null(query_ret[["val"]])
-		){
+		if(sum(c("key","val") %in% names(query_ret)) == 2){
 			data_ret <- query_ret$val[tolower(query_ret$key) %in% tolower(keys)]
 			.vect_blacklist(data_ret, blacklist_values)
 
@@ -167,10 +172,7 @@ rdap_extract_df <- function(query_ret, sub_name){
 
 	} else {
 		data_ret <- lapply(query_ret, FUN=function(df){
-			if(
-				!is.null(df[["key"]]) &&
-				!is.null(df[["val"]])
-			){
+			if(sum(c("key","val") %in% names(df)) == 2){
 				df$val[tolower(df$key) %in% tolower(keys)]
 
 			} else {
